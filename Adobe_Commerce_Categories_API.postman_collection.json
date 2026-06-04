@@ -1,0 +1,224 @@
+{
+  "info": {
+    "name": "Adobe Commerce Optimizer – Categories API",
+    "_postman_id": "adobe-commerce-categories-001",
+    "description": "Postman collection for creating and managing categories via the Adobe Commerce Optimizer Data Ingestion REST API.\n\n## Setup\nSet the following Collection Variables before running any request:\n- `tenantId` – from Commerce Cloud Manager → Instance Details\n- `clientId` – from Adobe Developer Console\n- `clientSecret` – from Adobe Developer Console\n- `region` – e.g. `na1`\n- `environment` – `sandbox` for non-production, leave empty for production\n\nRun **\"0. Get Access Token\"** first. The token is saved automatically to `accessToken` via a test script.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "tenantId",     "value": "YOUR_TENANT_ID",     "type": "string" },
+    { "key": "clientId",     "value": "YOUR_CLIENT_ID",     "type": "string" },
+    { "key": "clientSecret", "value": "YOUR_CLIENT_SECRET", "type": "string" },
+    { "key": "region",       "value": "na1",                "type": "string" },
+    { "key": "environment",  "value": "sandbox",            "type": "string" },
+    { "key": "accessToken",  "value": "",                   "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "0. Get Access Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "if (json.access_token) {",
+              "    pm.collectionVariables.set('accessToken', 'Bearer ' + json.access_token);",
+              "    console.log('Access token saved successfully.');",
+              "} else {",
+              "    console.error('Failed to get access token:', JSON.stringify(json));",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "grant_type",    "value": "client_credentials" },
+            { "key": "client_id",     "value": "{{clientId}}" },
+            { "key": "client_secret", "value": "{{clientSecret}}" },
+            { "key": "scope",         "value": "openid,AdobeID,email,additional_info.projectedProductContext,profile,commerce.aco.ingestion,commerce.accs,org.read,additional_info.roles" }
+          ]
+        },
+        "url": {
+          "raw": "https://ims-na1.adobelogin.com/ims/token/v3",
+          "protocol": "https",
+          "host": ["ims-na1", "adobelogin", "com"],
+          "path": ["ims", "token", "v3"]
+        },
+        "description": "Generates an IMS access token using client credentials. The token is automatically saved to the `accessToken` collection variable via the Test script."
+      }
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "1. Create Root Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "{{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"slug\": \"men\",\n    \"name\": \"Men\",\n    \"family\": \"main-catalog\",\n    \"parentSlug\": \"\",\n    \"level\": 1,\n    \"description\": \"All mens clothing and accessories\",\n    \"metaTags\": {\n      \"title\": \"Men | My Store\",\n      \"description\": \"Shop mens clothing, shoes, and accessories\",\n      \"keywords\": [\"mens\", \"clothing\", \"fashion\"]\n    },\n    \"images\": [\n      {\n        \"url\": \"https://example.com/images/men-banner.jpg\",\n        \"label\": \"Men category banner\",\n        \"roles\": [\"BASE\", \"THUMBNAIL\"]\n      }\n    ]\n  }\n]",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "https://{{region}}-{{environment}}.api.commerce.adobe.com/{{tenantId}}/v1/catalog/categories",
+              "protocol": "https",
+              "host": ["{{region}}-{{environment}}.api.commerce.adobe.com"],
+              "path": ["{{tenantId}}", "v1", "catalog", "categories"]
+            },
+            "description": "Creates a single root-level (level 1) category. The `slug` is the unique identifier and determines hierarchy. `parentSlug` is empty for root categories."
+          }
+        },
+        {
+          "name": "2. Create Child Category (Level 2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "{{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"slug\": \"men/clothing\",\n    \"name\": \"Men's Clothing\",\n    \"family\": \"main-catalog\",\n    \"parentSlug\": \"men\",\n    \"level\": 2,\n    \"description\": \"Tops, bottoms, and outerwear for men\",\n    \"metaTags\": {\n      \"title\": \"Men's Clothing | My Store\",\n      \"description\": \"Browse our full range of mens clothing\",\n      \"keywords\": [\"mens clothing\", \"shirts\", \"pants\"]\n    },\n    \"images\": [\n      {\n        \"url\": \"https://example.com/images/mens-clothing.jpg\",\n        \"label\": \"Men's clothing collection\",\n        \"roles\": [\"BASE\", \"THUMBNAIL\"]\n      }\n    ]\n  }\n]",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "https://{{region}}-{{environment}}.api.commerce.adobe.com/{{tenantId}}/v1/catalog/categories",
+              "protocol": "https",
+              "host": ["{{region}}-{{environment}}.api.commerce.adobe.com"],
+              "path": ["{{tenantId}}", "v1", "catalog", "categories"]
+            },
+            "description": "Creates a level 2 child category under the 'men' root. The `parentSlug` must reference an existing category slug."
+          }
+        },
+        {
+          "name": "3. Create Grandchild Category (Level 3)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "{{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"slug\": \"men/clothing/tops\",\n    \"name\": \"Men's Tops\",\n    \"family\": \"main-catalog\",\n    \"parentSlug\": \"men/clothing\",\n    \"level\": 3,\n    \"description\": \"T-shirts, polos, and dress shirts\",\n    \"metaTags\": {\n      \"title\": \"Men's Tops | My Store\",\n      \"description\": \"Shop mens tops and shirts\",\n      \"keywords\": [\"mens tops\", \"t-shirts\", \"shirts\"]\n    }\n  }\n]",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "https://{{region}}-{{environment}}.api.commerce.adobe.com/{{tenantId}}/v1/catalog/categories",
+              "protocol": "https",
+              "host": ["{{region}}-{{environment}}.api.commerce.adobe.com"],
+              "path": ["{{tenantId}}", "v1", "catalog", "categories"]
+            },
+            "description": "Creates a level 3 (grandchild) category. Images are optional — omit for leaf categories that don't need a hero image."
+          }
+        },
+        {
+          "name": "4. Batch Create Multiple Categories",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "{{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"slug\": \"women\",\n    \"name\": \"Women\",\n    \"family\": \"main-catalog\",\n    \"parentSlug\": \"\",\n    \"level\": 1,\n    \"description\": \"All womens clothing and accessories\",\n    \"metaTags\": {\n      \"title\": \"Women | My Store\",\n      \"description\": \"Shop womens clothing, shoes, and accessories\",\n      \"keywords\": [\"womens\", \"clothing\", \"fashion\"]\n    }\n  },\n  {\n    \"slug\": \"women/clothing\",\n    \"name\": \"Women's Clothing\",\n    \"family\": \"main-catalog\",\n    \"parentSlug\": \"women\",\n    \"level\": 2,\n    \"description\": \"Dresses, tops, and bottoms for women\",\n    \"metaTags\": {\n      \"title\": \"Women's Clothing | My Store\",\n      \"description\": \"Browse our full range of womens clothing\",\n      \"keywords\": [\"womens clothing\", \"dresses\", \"tops\"]\n    }\n  },\n  {\n    \"slug\": \"women/clothing/tops\",\n    \"name\": \"Women's Tops\",\n    \"family\": \"main-catalog\",\n    \"parentSlug\": \"women/clothing\",\n    \"level\": 3,\n    \"description\": \"Blouses, t-shirts, and sweaters\",\n    \"metaTags\": {\n      \"title\": \"Women's Tops\",\n      \"description\": \"Shop womens tops and blouses\",\n      \"keywords\": [\"womens tops\", \"blouses\", \"sweaters\"]\n    }\n  },\n  {\n    \"slug\": \"women/clothing/bottoms\",\n    \"name\": \"Women's Bottoms\",\n    \"family\": \"main-catalog\",\n    \"parentSlug\": \"women/clothing\",\n    \"level\": 3,\n    \"description\": \"Jeans, skirts, and trousers\",\n    \"metaTags\": {\n      \"title\": \"Women's Bottoms\",\n      \"description\": \"Shop womens pants, jeans, and skirts\",\n      \"keywords\": [\"womens bottoms\", \"jeans\", \"skirts\"]\n    }\n  }\n]",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "https://{{region}}-{{environment}}.api.commerce.adobe.com/{{tenantId}}/v1/catalog/categories",
+              "protocol": "https",
+              "host": ["{{region}}-{{environment}}.api.commerce.adobe.com"],
+              "path": ["{{tenantId}}", "v1", "catalog", "categories"]
+            },
+            "description": "Creates multiple categories in a single API call. The array can contain categories across different levels — the API processes all of them together. A successful response returns: {\"status\": \"ACCEPTED\", \"acceptedCount\": 4}"
+          }
+        },
+        {
+          "name": "5. Create Seasonal Family Categories",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "{{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"slug\": \"summer\",\n    \"name\": \"Summer\",\n    \"family\": \"seasonal\",\n    \"parentSlug\": \"\",\n    \"level\": 1,\n    \"description\": \"Seasonal summer collection\"\n  },\n  {\n    \"slug\": \"summer/essentials\",\n    \"name\": \"Summer Essentials\",\n    \"family\": \"seasonal\",\n    \"parentSlug\": \"summer\",\n    \"level\": 2,\n    \"description\": \"Must-have items for summer\",\n    \"metaTags\": {\n      \"title\": \"Summer Essentials\",\n      \"description\": \"Shop our summer essentials collection\",\n      \"keywords\": [\"summer\", \"essentials\", \"seasonal\"]\n    },\n    \"images\": [\n      {\n        \"url\": \"https://example.com/images/summer-essentials.jpg\",\n        \"label\": \"Summer essentials collection hero\",\n        \"roles\": [\"BASE\", \"THUMBNAIL\"],\n        \"customRoles\": [\"hero-banner\"]\n      }\n    ]\n  }\n]",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "https://{{region}}-{{environment}}.api.commerce.adobe.com/{{tenantId}}/v1/catalog/categories",
+              "protocol": "https",
+              "host": ["{{region}}-{{environment}}.api.commerce.adobe.com"],
+              "path": ["{{tenantId}}", "v1", "catalog", "categories"]
+            },
+            "description": "Creates categories under a separate `seasonal` family. Use distinct family names when your catalog has multiple independent category trees (e.g. main navigation vs. seasonal campaigns)."
+          }
+        },
+        {
+          "name": "6. Create Category with Full Rich Content",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "{{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"slug\": \"men/clothing/shorts\",\n    \"name\": \"Men's Shorts\",\n    \"family\": \"main-catalog\",\n    \"parentSlug\": \"men/clothing\",\n    \"level\": 3,\n    \"description\": \"Browse our full range of men's shorts, from casual to athletic styles.\",\n    \"metaTags\": {\n      \"title\": \"Men's Shorts | My Store\",\n      \"description\": \"Shop men's shorts for every occasion\",\n      \"keywords\": [\"shorts\", \"men\", \"athletic\", \"casual\"]\n    },\n    \"images\": [\n      {\n        \"url\": \"https://example.com/images/mens-shorts-hero.jpg\",\n        \"label\": \"Men's shorts collection hero\",\n        \"roles\": [\"BASE\"],\n        \"customRoles\": [\"hero-banner\"]\n      },\n      {\n        \"url\": \"https://example.com/images/mens-shorts-thumb.jpg\",\n        \"label\": \"Men's shorts thumbnail\",\n        \"roles\": [\"THUMBNAIL\"]\n      }\n    ]\n  }\n]",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "https://{{region}}-{{environment}}.api.commerce.adobe.com/{{tenantId}}/v1/catalog/categories",
+              "protocol": "https",
+              "host": ["{{region}}-{{environment}}.api.commerce.adobe.com"],
+              "path": ["{{tenantId}}", "v1", "catalog", "categories"]
+            },
+            "description": "Creates a fully populated category with description, SEO metaTags, multiple images with different roles, and customRoles. Use this shape for rich category landing pages."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product–Category Assignment",
+      "item": [
+        {
+          "name": "7. Assign Product to Categories",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "{{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"sku\": \"my-product-sku-001\",\n    \"source\": {\n      \"locale\": \"en-US\"\n    },\n    \"name\": \"My Product\",\n    \"slug\": \"my-product\",\n    \"status\": \"ENABLED\",\n    \"categories\": [\n      { \"slug\": \"men/clothing/tops\" },\n      { \"slug\": \"summer/essentials\" }\n    ],\n    \"roles\": [\"SEARCH\", \"CATALOG\"]\n  }\n]",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "https://{{region}}-{{environment}}.api.commerce.adobe.com/{{tenantId}}/v1/catalog/products",
+              "protocol": "https",
+              "host": ["{{region}}-{{environment}}.api.commerce.adobe.com"],
+              "path": ["{{tenantId}}", "v1", "catalog", "products"]
+            },
+            "description": "Assigns an existing product to one or more categories by referencing their slugs in the `categories` array. A product can belong to multiple categories across different families."
+          }
+        }
+      ]
+    }
+  ]
+}
