@@ -1,0 +1,233 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-06-04T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app",
+  "resources": [
+    {
+      "_id": "wrk_automotive_categories",
+      "_type": "workspace",
+      "name": "Adobe Commerce Optimizer – Automotive Categories API",
+      "description": "Automotive parts & accessories category hierarchy via the Adobe Commerce Optimizer Data Ingestion REST API.\n\nTwo catalog families:\n- parts-catalog: Engine, Brakes, Suspension, Electrical\n- seasonal-catalog: Winter Prep, Summer Performance\n\nRun request 0 first to get your access token, then copy the token value into the AUTOPARTS_ACCESS_TOKEN environment variable.",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_base_automotive",
+      "_type": "environment",
+      "name": "Base Environment",
+      "parentId": "wrk_automotive_categories",
+      "data": {
+        "tenantId": "YOUR_TENANT_ID",
+        "clientId": "YOUR_CLIENT_ID",
+        "clientSecret": "YOUR_CLIENT_SECRET",
+        "region": "na1",
+        "environment": "sandbox",
+        "accessToken": "Bearer YOUR_ACCESS_TOKEN",
+        "baseUrl": "https://na1-sandbox.api.commerce.adobe.com",
+        "categoriesEndpoint": "/v1/catalog/categories",
+        "productsEndpoint": "/v1/catalog/products",
+        "imsUrl": "https://ims-na1.adobelogin.com/ims/token/v3"
+      },
+      "color": null
+    },
+    {
+      "_id": "env_production",
+      "_type": "environment",
+      "name": "Production",
+      "parentId": "wrk_automotive_categories",
+      "data": {
+        "tenantId": "YOUR_TENANT_ID",
+        "clientId": "YOUR_CLIENT_ID",
+        "clientSecret": "YOUR_CLIENT_SECRET",
+        "region": "na1",
+        "environment": "",
+        "accessToken": "Bearer YOUR_ACCESS_TOKEN",
+        "baseUrl": "https://na1.api.commerce.adobe.com",
+        "categoriesEndpoint": "/v1/catalog/categories",
+        "productsEndpoint": "/v1/catalog/products",
+        "imsUrl": "https://ims-na1.adobelogin.com/ims/token/v3"
+      },
+      "color": "#e74c3c"
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "name": "Authentication",
+      "parentId": "wrk_automotive_categories",
+      "description": "Get an IMS access token. Copy the access_token value from the response and paste it into your environment's accessToken variable prefixed with 'Bearer '.",
+      "sortKey": 0
+    },
+    {
+      "_id": "fld_parts",
+      "_type": "request_group",
+      "name": "Parts Catalog",
+      "parentId": "wrk_automotive_categories",
+      "description": "Core parts-catalog family: Engine & Drivetrain, Brakes, Suspension & Steering, Electrical & Lighting.",
+      "sortKey": 1
+    },
+    {
+      "_id": "fld_seasonal",
+      "_type": "request_group",
+      "name": "Seasonal Catalog",
+      "parentId": "wrk_automotive_categories",
+      "description": "seasonal-catalog family: time-limited campaign trees for Winter Vehicle Prep and Summer Performance.",
+      "sortKey": 2
+    },
+    {
+      "_id": "fld_products",
+      "_type": "request_group",
+      "name": "Product–Category Assignment",
+      "parentId": "wrk_automotive_categories",
+      "description": "Assign product SKUs to categories across one or more families.",
+      "sortKey": 3
+    },
+    {
+      "_id": "req_get_token",
+      "_type": "request",
+      "name": "0. Get Access Token",
+      "parentId": "fld_auth",
+      "description": "Exchanges client credentials for an Adobe IMS Bearer token using the OAuth 2.0 client_credentials flow.\n\nAfter a successful response, copy the access_token value and update your environment's accessToken variable to: Bearer <paste_token_here>",
+      "method": "POST",
+      "url": "{{ imsUrl }}",
+      "body": {
+        "mimeType": "application/x-www-form-urlencoded",
+        "params": [
+          { "name": "grant_type",    "value": "client_credentials" },
+          { "name": "client_id",     "value": "{{ clientId }}" },
+          { "name": "client_secret", "value": "{{ clientSecret }}" },
+          { "name": "scope",         "value": "openid,AdobeID,email,additional_info.projectedProductContext,profile,commerce.aco.ingestion,commerce.accs,org.read,additional_info.roles" }
+        ]
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/x-www-form-urlencoded" }
+      ],
+      "sortKey": 0
+    },
+    {
+      "_id": "req_root_engine",
+      "_type": "request",
+      "name": "1. Create Root Category – Engine & Drivetrain",
+      "parentId": "fld_parts",
+      "description": "Creates the top-level Engine & Drivetrain root in the parts-catalog family.\nparentSlug must be an empty string for all level 1 root categories.",
+      "method": "POST",
+      "url": "{{ baseUrl }}/{{ tenantId }}{{ categoriesEndpoint }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "[\n  {\n    \"slug\": \"engine-drivetrain\",\n    \"name\": \"Engine & Drivetrain\",\n    \"family\": \"parts-catalog\",\n    \"parentSlug\": \"\",\n    \"level\": 1,\n    \"description\": \"OEM and aftermarket engine components, transmissions, and drivetrain parts for all makes and models.\",\n    \"metaTags\": {\n      \"title\": \"Engine & Drivetrain Parts | AutoParts Store\",\n      \"description\": \"Shop engine components, transmissions, differentials, and drivetrain parts. OEM quality and aftermarket options available.\",\n      \"keywords\": [\"engine parts\", \"drivetrain\", \"transmission\", \"OEM\", \"aftermarket\"]\n    },\n    \"images\": [\n      {\n        \"url\": \"https://example.com/images/engine-drivetrain-hero.jpg\",\n        \"label\": \"Engine and drivetrain parts hero\",\n        \"roles\": [\"BASE\", \"THUMBNAIL\"],\n        \"customRoles\": [\"category-hero\"]\n      }\n    ]\n  }\n]"
+      },
+      "headers": [
+        { "name": "Content-Type",  "value": "application/json" },
+        { "name": "Authorization", "value": "{{ accessToken }}" }
+      ],
+      "sortKey": 0
+    },
+    {
+      "_id": "req_child_engine_components",
+      "_type": "request",
+      "name": "2. Create Child Category – Engine Components (Level 2)",
+      "parentId": "fld_parts",
+      "description": "Creates a level 2 subcategory nested under engine-drivetrain.\nparentSlug must exactly match the parent's slug.",
+      "method": "POST",
+      "url": "{{ baseUrl }}/{{ tenantId }}{{ categoriesEndpoint }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "[\n  {\n    \"slug\": \"engine-drivetrain/engine-components\",\n    \"name\": \"Engine Components\",\n    \"family\": \"parts-catalog\",\n    \"parentSlug\": \"engine-drivetrain\",\n    \"level\": 2,\n    \"description\": \"Internal and external engine components including pistons, gaskets, timing systems, and valvetrain parts.\",\n    \"metaTags\": {\n      \"title\": \"Engine Components | AutoParts Store\",\n      \"description\": \"Browse OEM and aftermarket engine components. Pistons, head gaskets, timing chains, camshafts, and more.\",\n      \"keywords\": [\"engine components\", \"pistons\", \"gaskets\", \"timing chain\", \"camshaft\"]\n    },\n    \"images\": [\n      {\n        \"url\": \"https://example.com/images/engine-components.jpg\",\n        \"label\": \"Engine components category\",\n        \"roles\": [\"BASE\", \"THUMBNAIL\"]\n      }\n    ]\n  }\n]"
+      },
+      "headers": [
+        { "name": "Content-Type",  "value": "application/json" },
+        { "name": "Authorization", "value": "{{ accessToken }}" }
+      ],
+      "sortKey": 1
+    },
+    {
+      "_id": "req_grandchild_pistons",
+      "_type": "request",
+      "name": "3. Create Grandchild Category – Pistons & Rings (Level 3)",
+      "parentId": "fld_parts",
+      "description": "Creates a level 3 leaf category for Pistons & Rings.\nImages and metaTags are optional at this depth — leaf nodes feeding product listing pages often don't need a hero image.",
+      "method": "POST",
+      "url": "{{ baseUrl }}/{{ tenantId }}{{ categoriesEndpoint }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "[\n  {\n    \"slug\": \"engine-drivetrain/engine-components/pistons-rings\",\n    \"name\": \"Pistons & Rings\",\n    \"family\": \"parts-catalog\",\n    \"parentSlug\": \"engine-drivetrain/engine-components\",\n    \"level\": 3,\n    \"description\": \"Forged and cast pistons, piston rings, and piston pin kits for engine rebuilds and performance upgrades.\",\n    \"metaTags\": {\n      \"title\": \"Pistons & Rings | Engine Components\",\n      \"description\": \"Shop forged pistons, piston ring sets, and pin kits for stock rebuilds and high-performance builds.\",\n      \"keywords\": [\"pistons\", \"piston rings\", \"forged pistons\", \"engine rebuild\", \"performance\"]\n    }\n  }\n]"
+      },
+      "headers": [
+        { "name": "Content-Type",  "value": "application/json" },
+        { "name": "Authorization", "value": "{{ accessToken }}" }
+      ],
+      "sortKey": 2
+    },
+    {
+      "_id": "req_batch_brakes_suspension",
+      "_type": "request",
+      "name": "4. Batch Create – Brakes & Suspension Trees",
+      "parentId": "fld_parts",
+      "description": "Seeds two complete category trees in a single request:\n- Brakes (root + 3 children: Brake Pads, Rotors & Drums, Calipers & Hardware)\n- Suspension & Steering (root + 2 children: Shocks & Struts, Control Arms & Ball Joints)\n\nSuccessful response: { \"status\": \"ACCEPTED\", \"acceptedCount\": 7 }",
+      "method": "POST",
+      "url": "{{ baseUrl }}/{{ tenantId }}{{ categoriesEndpoint }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "[\n  {\n    \"slug\": \"brakes\",\n    \"name\": \"Brakes\",\n    \"family\": \"parts-catalog\",\n    \"parentSlug\": \"\",\n    \"level\": 1,\n    \"description\": \"Complete brake system parts — pads, rotors, calipers, lines, and hardware for all vehicle types.\",\n    \"metaTags\": {\n      \"title\": \"Brake Parts | AutoParts Store\",\n      \"description\": \"Shop brake pads, rotors, calipers, and complete brake kits. OEM replacements and performance upgrades.\",\n      \"keywords\": [\"brake pads\", \"brake rotors\", \"calipers\", \"brake kit\", \"stopping power\"]\n    },\n    \"images\": [\n      {\n        \"url\": \"https://example.com/images/brakes-hero.jpg\",\n        \"label\": \"Brake system parts hero\",\n        \"roles\": [\"BASE\", \"THUMBNAIL\"],\n        \"customRoles\": [\"category-hero\"]\n      }\n    ]\n  },\n  {\n    \"slug\": \"brakes/brake-pads\",\n    \"name\": \"Brake Pads\",\n    \"family\": \"parts-catalog\",\n    \"parentSlug\": \"brakes\",\n    \"level\": 2,\n    \"description\": \"Ceramic, semi-metallic, and organic brake pads for street, track, and heavy-duty applications.\",\n    \"metaTags\": {\n      \"title\": \"Brake Pads | AutoParts Store\",\n      \"description\": \"Find the right brake pads — ceramic for daily driving, semi-metallic for towing, performance compounds for track use.\",\n      \"keywords\": [\"ceramic brake pads\", \"semi-metallic pads\", \"performance brake pads\", \"track pads\"]\n    }\n  },\n  {\n    \"slug\": \"brakes/brake-rotors\",\n    \"name\": \"Brake Rotors & Drums\",\n    \"family\": \"parts-catalog\",\n    \"parentSlug\": \"brakes\",\n    \"level\": 2,\n    \"description\": \"Slotted, drilled, and plain rotors plus brake drums for all vehicle classes.\",\n    \"metaTags\": {\n      \"title\": \"Brake Rotors & Drums | AutoParts Store\",\n      \"description\": \"Shop drilled, slotted, and plain brake rotors plus replacement drums. OEM fitment guaranteed.\",\n      \"keywords\": [\"brake rotors\", \"drilled rotors\", \"slotted rotors\", \"brake drums\"]\n    }\n  },\n  {\n    \"slug\": \"brakes/calipers-hardware\",\n    \"name\": \"Calipers & Hardware\",\n    \"family\": \"parts-catalog\",\n    \"parentSlug\": \"brakes\",\n    \"level\": 2,\n    \"description\": \"Remanufactured and new calipers, caliper brackets, brake hardware kits, and guide pins.\",\n    \"metaTags\": {\n      \"title\": \"Calipers & Brake Hardware | AutoParts Store\",\n      \"description\": \"Browse brake calipers, brackets, and hardware kits. Remanufactured cores accepted.\",\n      \"keywords\": [\"brake calipers\", \"caliper brackets\", \"brake hardware\", \"guide pins\"]\n    }\n  },\n  {\n    \"slug\": \"suspension\",\n    \"name\": \"Suspension & Steering\",\n    \"family\": \"parts-catalog\",\n    \"parentSlug\": \"\",\n    \"level\": 1,\n    \"description\": \"Shocks, struts, control arms, tie rods, and complete suspension kits for all makes and models.\",\n    \"metaTags\": {\n      \"title\": \"Suspension & Steering Parts | AutoParts Store\",\n      \"description\": \"Shop shocks, struts, ball joints, control arms, and steering components.\",\n      \"keywords\": [\"shocks\", \"struts\", \"control arms\", \"tie rods\", \"suspension kit\"]\n    },\n    \"images\": [\n      {\n        \"url\": \"https://example.com/images/suspension-hero.jpg\",\n        \"label\": \"Suspension and steering parts hero\",\n        \"roles\": [\"BASE\", \"THUMBNAIL\"],\n        \"customRoles\": [\"category-hero\"]\n      }\n    ]\n  },\n  {\n    \"slug\": \"suspension/shocks-struts\",\n    \"name\": \"Shocks & Struts\",\n    \"family\": \"parts-catalog\",\n    \"parentSlug\": \"suspension\",\n    \"level\": 2,\n    \"description\": \"OEM replacement and performance shocks and struts, complete strut assemblies, and coilover kits.\",\n    \"metaTags\": {\n      \"title\": \"Shocks & Struts | AutoParts Store\",\n      \"description\": \"Find replacement shocks, struts, and complete strut assemblies. Performance and OEM options in stock.\",\n      \"keywords\": [\"shocks\", \"struts\", \"strut assembly\", \"coilovers\"]\n    }\n  },\n  {\n    \"slug\": \"suspension/control-arms-ball-joints\",\n    \"name\": \"Control Arms & Ball Joints\",\n    \"family\": \"parts-catalog\",\n    \"parentSlug\": \"suspension\",\n    \"level\": 2,\n    \"description\": \"Upper and lower control arms, ball joints, and complete control arm assemblies with bushings pre-installed.\",\n    \"metaTags\": {\n      \"title\": \"Control Arms & Ball Joints | AutoParts Store\",\n      \"description\": \"Shop upper and lower control arms, ball joints, and pre-assembled kits for easy installation.\",\n      \"keywords\": [\"control arms\", \"ball joints\", \"upper control arm\", \"lower control arm\"]\n    }\n  }\n]"
+      },
+      "headers": [
+        { "name": "Content-Type",  "value": "application/json" },
+        { "name": "Authorization", "value": "{{ accessToken }}" }
+      ],
+      "sortKey": 3
+    },
+    {
+      "_id": "req_electrical_lighting",
+      "_type": "request",
+      "name": "5. Create Full Rich Category – Electrical & Lighting",
+      "parentId": "fld_parts",
+      "description": "Creates the Electrical & Lighting root with full SEO metadata, dual images (BASE hero + THUMBNAIL) with customRoles, plus three child subcategories in one request:\n- Batteries & Charging\n- Headlights & Tail Lights\n- Sensors & Switches\n\nThis is the template shape for SEO-driven category landing pages.",
+      "method": "POST",
+      "url": "{{ baseUrl }}/{{ tenantId }}{{ categoriesEndpoint }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "[\n  {\n    \"slug\": \"electrical-lighting\",\n    \"name\": \"Electrical & Lighting\",\n    \"family\": \"parts-catalog\",\n    \"parentSlug\": \"\",\n    \"level\": 1,\n    \"description\": \"Batteries, alternators, starters, sensors, wiring harnesses, headlights, tail lights, and all vehicle electrical components.\",\n    \"metaTags\": {\n      \"title\": \"Electrical & Lighting Parts | AutoParts Store\",\n      \"description\": \"Shop batteries, alternators, starters, sensors, and lighting. OEM and aftermarket electrical parts for all vehicles.\",\n      \"keywords\": [\"car battery\", \"alternator\", \"starter motor\", \"headlights\", \"sensors\", \"wiring\"]\n    },\n    \"images\": [\n      {\n        \"url\": \"https://example.com/images/electrical-lighting-hero.jpg\",\n        \"label\": \"Electrical and lighting parts hero banner\",\n        \"roles\": [\"BASE\"],\n        \"customRoles\": [\"category-hero\", \"nav-featured\"]\n      },\n      {\n        \"url\": \"https://example.com/images/electrical-lighting-thumb.jpg\",\n        \"label\": \"Electrical and lighting thumbnail\",\n        \"roles\": [\"THUMBNAIL\"]\n      }\n    ]\n  },\n  {\n    \"slug\": \"electrical-lighting/batteries-charging\",\n    \"name\": \"Batteries & Charging\",\n    \"family\": \"parts-catalog\",\n    \"parentSlug\": \"electrical-lighting\",\n    \"level\": 2,\n    \"description\": \"Automotive and truck batteries, alternators, voltage regulators, and battery accessories.\",\n    \"metaTags\": {\n      \"title\": \"Car Batteries & Charging Systems | AutoParts Store\",\n      \"description\": \"Find the right battery for your vehicle. Shop alternators, voltage regulators, and battery maintainers.\",\n      \"keywords\": [\"car battery\", \"truck battery\", \"alternator\", \"voltage regulator\", \"battery charger\"]\n    },\n    \"images\": [\n      {\n        \"url\": \"https://example.com/images/batteries-charging.jpg\",\n        \"label\": \"Batteries and charging systems\",\n        \"roles\": [\"BASE\", \"THUMBNAIL\"]\n      }\n    ]\n  },\n  {\n    \"slug\": \"electrical-lighting/headlights-taillights\",\n    \"name\": \"Headlights & Tail Lights\",\n    \"family\": \"parts-catalog\",\n    \"parentSlug\": \"electrical-lighting\",\n    \"level\": 2,\n    \"description\": \"OEM replacement and upgraded headlight assemblies, tail light assemblies, fog lights, and daytime running lights.\",\n    \"metaTags\": {\n      \"title\": \"Headlights & Tail Lights | AutoParts Store\",\n      \"description\": \"Shop OEM replacement headlights, tail lights, and LED upgrades. Direct-fit assemblies for all makes.\",\n      \"keywords\": [\"headlights\", \"tail lights\", \"LED headlights\", \"headlight assembly\", \"fog lights\"]\n    },\n    \"images\": [\n      {\n        \"url\": \"https://example.com/images/lighting-hero.jpg\",\n        \"label\": \"Headlights and tail lights\",\n        \"roles\": [\"BASE\", \"THUMBNAIL\"]\n      }\n    ]\n  },\n  {\n    \"slug\": \"electrical-lighting/sensors-switches\",\n    \"name\": \"Sensors & Switches\",\n    \"family\": \"parts-catalog\",\n    \"parentSlug\": \"electrical-lighting\",\n    \"level\": 2,\n    \"description\": \"O2 sensors, MAP sensors, ABS sensors, crankshaft position sensors, and ignition switches.\",\n    \"metaTags\": {\n      \"title\": \"Sensors & Switches | AutoParts Store\",\n      \"description\": \"Find O2 sensors, ABS sensors, MAP sensors, and ignition switches. OEM quality for accurate engine management.\",\n      \"keywords\": [\"O2 sensor\", \"oxygen sensor\", \"ABS sensor\", \"MAP sensor\", \"crankshaft sensor\"]\n    }\n  }\n]"
+      },
+      "headers": [
+        { "name": "Content-Type",  "value": "application/json" },
+        { "name": "Authorization", "value": "{{ accessToken }}" }
+      ],
+      "sortKey": 4
+    },
+    {
+      "_id": "req_seasonal",
+      "_type": "request",
+      "name": "6. Create Seasonal Family – Winter & Summer Campaigns",
+      "parentId": "fld_seasonal",
+      "description": "Creates two seasonal campaign trees under the separate seasonal-catalog family in one request:\n- Winter Vehicle Prep (root + Cold Weather Batteries + Winter Wipers & Fluid)\n- Summer Performance (root + Cooling System Upgrades)\n\nSeasonal categories are independent from parts-catalog and can be toggled without affecting permanent navigation.\nImages include customRoles for homepage-banner slot targeting.",
+      "method": "POST",
+      "url": "{{ baseUrl }}/{{ tenantId }}{{ categoriesEndpoint }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "[\n  {\n    \"slug\": \"winter-prep\",\n    \"name\": \"Winter Vehicle Prep\",\n    \"family\": \"seasonal-catalog\",\n    \"parentSlug\": \"\",\n    \"level\": 1,\n    \"description\": \"Everything you need to prepare your vehicle for winter — batteries, wipers, antifreeze, snow tires, and traction aids.\",\n    \"metaTags\": {\n      \"title\": \"Winter Vehicle Prep | AutoParts Store\",\n      \"description\": \"Get your vehicle ready for winter. Shop cold-weather batteries, winter wipers, antifreeze, and snow tires.\",\n      \"keywords\": [\"winter car prep\", \"winter battery\", \"winter wipers\", \"antifreeze\", \"snow tires\"]\n    },\n    \"images\": [\n      {\n        \"url\": \"https://example.com/images/winter-prep-hero.jpg\",\n        \"label\": \"Winter vehicle preparation hero\",\n        \"roles\": [\"BASE\", \"THUMBNAIL\"],\n        \"customRoles\": [\"seasonal-hero\", \"homepage-banner\"]\n      }\n    ]\n  },\n  {\n    \"slug\": \"winter-prep/cold-weather-batteries\",\n    \"name\": \"Cold Weather Batteries\",\n    \"family\": \"seasonal-catalog\",\n    \"parentSlug\": \"winter-prep\",\n    \"level\": 2,\n    \"description\": \"High cold-cranking-amp (CCA) batteries engineered for reliable starts in sub-zero temperatures.\",\n    \"metaTags\": {\n      \"title\": \"Cold Weather Car Batteries | AutoParts Store\",\n      \"description\": \"Shop high CCA batteries built for winter. AGM and lead-acid options for trucks, SUVs, and passenger cars.\",\n      \"keywords\": [\"cold weather battery\", \"high CCA battery\", \"AGM battery\", \"winter battery\"]\n    }\n  },\n  {\n    \"slug\": \"winter-prep/winter-wipers-fluid\",\n    \"name\": \"Winter Wipers & Washer Fluid\",\n    \"family\": \"seasonal-catalog\",\n    \"parentSlug\": \"winter-prep\",\n    \"level\": 2,\n    \"description\": \"Beam and traditional winter wiper blades plus de-icing washer fluid rated to -40F.\",\n    \"metaTags\": {\n      \"title\": \"Winter Wiper Blades & De-Icer Fluid | AutoParts Store\",\n      \"description\": \"Stay safe in winter weather. Shop beam wiper blades and sub-zero washer fluid.\",\n      \"keywords\": [\"winter wiper blades\", \"beam wipers\", \"de-icer fluid\", \"washer fluid\"]\n    }\n  },\n  {\n    \"slug\": \"summer-performance\",\n    \"name\": \"Summer Performance\",\n    \"family\": \"seasonal-catalog\",\n    \"parentSlug\": \"\",\n    \"level\": 1,\n    \"description\": \"Cooling system upgrades, performance air intakes, summer tires, and detailing products for warm-weather driving.\",\n    \"metaTags\": {\n      \"title\": \"Summer Performance Parts | AutoParts Store\",\n      \"description\": \"Maximize performance this summer. Shop radiators, performance intakes, summer tires, and car care products.\",\n      \"keywords\": [\"summer performance\", \"cooling system\", \"performance intake\", \"summer tires\"]\n    },\n    \"images\": [\n      {\n        \"url\": \"https://example.com/images/summer-performance-hero.jpg\",\n        \"label\": \"Summer performance parts hero\",\n        \"roles\": [\"BASE\", \"THUMBNAIL\"],\n        \"customRoles\": [\"seasonal-hero\", \"homepage-banner\"]\n      }\n    ]\n  },\n  {\n    \"slug\": \"summer-performance/cooling-system\",\n    \"name\": \"Cooling System Upgrades\",\n    \"family\": \"seasonal-catalog\",\n    \"parentSlug\": \"summer-performance\",\n    \"level\": 2,\n    \"description\": \"Performance radiators, electric fans, coolant additives, and thermostat kits to beat summer heat.\",\n    \"metaTags\": {\n      \"title\": \"Cooling System Parts & Upgrades | AutoParts Store\",\n      \"description\": \"Keep your engine cool. Shop performance radiators, electric cooling fans, and coolant additives.\",\n      \"keywords\": [\"performance radiator\", \"electric fan\", \"coolant additive\", \"thermostat\"]\n    }\n  }\n]"
+      },
+      "headers": [
+        { "name": "Content-Type",  "value": "application/json" },
+        { "name": "Authorization", "value": "{{ accessToken }}" }
+      ],
+      "sortKey": 0
+    },
+    {
+      "_id": "req_assign_product",
+      "_type": "request",
+      "name": "7. Assign Automotive Part to Categories",
+      "parentId": "fld_products",
+      "description": "Assigns the ProStart AGM Group H6 850CCA Battery to categories in both families simultaneously:\n- electrical-lighting/batteries-charging (parts-catalog) — permanent placement\n- winter-prep/cold-weather-batteries (seasonal-catalog) — campaign placement\n\nA single SKU can belong to categories across multiple families without data duplication.",
+      "method": "POST",
+      "url": "{{ baseUrl }}/{{ tenantId }}{{ productsEndpoint }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "[\n  {\n    \"sku\": \"BAT-AGM-H6-850CCA\",\n    \"source\": {\n      \"locale\": \"en-US\"\n    },\n    \"name\": \"ProStart AGM Group H6 850CCA Battery\",\n    \"slug\": \"prostart-agm-h6-850cca-battery\",\n    \"status\": \"ENABLED\",\n    \"description\": \"AGM absorbed glass mat battery with 850 cold cranking amps. Maintenance-free, spill-proof design for trucks, SUVs, and high-demand vehicles.\",\n    \"shortDescription\": \"AGM 850CCA battery — Group H6 fitment\",\n    \"attributes\": [\n      { \"code\": \"brand\",            \"type\": \"STRING\", \"values\": [\"ProStart\"] },\n      { \"code\": \"batteryType\",      \"type\": \"STRING\", \"values\": [\"AGM\"] },\n      { \"code\": \"coldCrankingAmps\", \"type\": \"STRING\", \"values\": [\"850\"] },\n      { \"code\": \"groupSize\",        \"type\": \"STRING\", \"values\": [\"H6\"] },\n      { \"code\": \"partType\",         \"type\": \"STRING\", \"values\": [\"Battery\"] }\n    ],\n    \"categories\": [\n      { \"slug\": \"electrical-lighting/batteries-charging\" },\n      { \"slug\": \"winter-prep/cold-weather-batteries\" }\n    ],\n    \"roles\": [\"SEARCH\", \"CATALOG\"],\n    \"images\": [\n      {\n        \"url\": \"https://example.com/images/bat-agm-h6.jpg\",\n        \"label\": \"ProStart AGM H6 Battery\",\n        \"roles\": [\"PDP\", \"PLP\"]\n      }\n    ]\n  }\n]"
+      },
+      "headers": [
+        { "name": "Content-Type",  "value": "application/json" },
+        { "name": "Authorization", "value": "{{ accessToken }}" }
+      ],
+      "sortKey": 0
+    }
+  ]
+}
