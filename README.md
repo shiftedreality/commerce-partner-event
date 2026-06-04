@@ -1,25 +1,27 @@
-# Adobe Commerce Optimizer – Categories API
+# Adobe Commerce Optimizer – Automotive Categories API
 
-Postman collection for creating and managing categories via the **Adobe Commerce Optimizer Data Ingestion REST API**.
+Postman collection for creating and managing an **automotive parts & accessories** category hierarchy via the Adobe Commerce Optimizer Data Ingestion REST API.
 
 ---
 
 ## Contents
 
 - [Overview](#overview)
+- [Catalog Structure](#catalog-structure)
 - [Prerequisites](#prerequisites)
 - [Import into Postman](#import-into-postman)
 - [Configuration](#configuration)
 - [Authentication](#authentication)
 - [Requests](#requests)
   - [0. Get Access Token](#0-get-access-token)
-  - [1. Create Root Category](#1-create-root-category)
-  - [2. Create Child Category (Level 2)](#2-create-child-category-level-2)
-  - [3. Create Grandchild Category (Level 3)](#3-create-grandchild-category-level-3)
-  - [4. Batch Create Multiple Categories](#4-batch-create-multiple-categories)
-  - [5. Create Seasonal Family Categories](#5-create-seasonal-family-categories)
-  - [6. Create Category with Full Rich Content](#6-create-category-with-full-rich-content)
-  - [7. Assign Product to Categories](#7-assign-product-to-categories)
+  - [1. Create Root Category – Engine & Drivetrain](#1-create-root-category--engine--drivetrain)
+  - [2. Create Child Category – Engine Components (Level 2)](#2-create-child-category--engine-components-level-2)
+  - [3. Create Grandchild Category – Pistons & Rings (Level 3)](#3-create-grandchild-category--pistons--rings-level-3)
+  - [4. Batch Create – Brakes & Suspension Trees](#4-batch-create--brakes--suspension-trees)
+  - [5. Create Full Rich Category – Electrical & Lighting](#5-create-full-rich-category--electrical--lighting)
+  - [6. Create Seasonal Family – Winter & Summer Campaigns](#6-create-seasonal-family--winter--summer-campaigns)
+  - [7. Assign Automotive Part to Categories](#7-assign-automotive-part-to-categories)
+- [Full Category Hierarchy](#full-category-hierarchy)
 - [Key Concepts](#key-concepts)
 - [API Response Reference](#api-response-reference)
 - [Rate Limits](#rate-limits)
@@ -29,12 +31,53 @@ Postman collection for creating and managing categories via the **Adobe Commerce
 
 ## Overview
 
-This collection covers the full category ingestion workflow for **Adobe Commerce Optimizer** (SaaS / composable catalog). Categories are created via the Data Ingestion REST API and then queryable on the storefront through the Merchandising GraphQL API (`navigation`, `categoryTree`, `searchCategory` queries).
+This collection models a real-world automotive aftermarket catalog using two independent category families ingested via the Adobe Commerce Optimizer Data Ingestion REST API. Categories are then queryable on the storefront through the Merchandising GraphQL API (`navigation`, `categoryTree`, `searchCategory` queries).
 
 **Base URL pattern:**
 ```
 https://{region}-{environment}.api.commerce.adobe.com/{tenantId}/v1/catalog/categories
 ```
+
+---
+
+## Catalog Structure
+
+The collection uses **two category families** to separate the permanent parts taxonomy from time-limited seasonal campaigns.
+
+### `parts-catalog` — Core Parts Taxonomy
+
+```
+Engine & Drivetrain          (level 1)
+└── Engine Components        (level 2)
+    └── Pistons & Rings      (level 3)
+
+Brakes                       (level 1)
+├── Brake Pads               (level 2)
+├── Brake Rotors & Drums     (level 2)
+└── Calipers & Hardware      (level 2)
+
+Suspension & Steering        (level 1)
+├── Shocks & Struts          (level 2)
+└── Control Arms & Ball Joints (level 2)
+
+Electrical & Lighting        (level 1)
+├── Batteries & Charging     (level 2)
+├── Headlights & Tail Lights (level 2)
+└── Sensors & Switches       (level 2)
+```
+
+### `seasonal-catalog` — Seasonal Campaigns
+
+```
+Winter Vehicle Prep              (level 1)
+├── Cold Weather Batteries       (level 2)
+└── Winter Wipers & Washer Fluid (level 2)
+
+Summer Performance               (level 1)
+└── Cooling System Upgrades      (level 2)
+```
+
+A product such as an AGM battery can simultaneously belong to `electrical-lighting/batteries-charging` (parts-catalog) **and** `winter-prep/cold-weather-batteries` (seasonal-catalog), surfacing it in both permanent navigation and the winter campaign.
 
 ---
 
@@ -79,7 +122,7 @@ After importing, open the collection and go to the **Variables** tab. Fill in th
 
 This collection uses **Adobe IMS OAuth 2.0 client credentials** flow.
 
-Run **request 0** before any other request. A Postman Test script automatically extracts the token from the response and saves it as `{{accessToken}}` on the collection, so all subsequent requests are authorized without any manual copy-paste.
+Run **request 0** before any other request. A Postman Test script automatically extracts the token from the response and saves it as `{{accessToken}}` on the collection — all subsequent requests are authorized without any manual copy-paste.
 
 The token is scoped to:
 ```
@@ -97,180 +140,179 @@ IMS tokens expire after **24 hours**. Re-run request 0 to refresh.
 
 **POST** `https://ims-na1.adobelogin.com/ims/token/v3`
 
-Exchanges your client credentials for a Bearer token. The token is saved automatically to `{{accessToken}}` via a Postman Test script and prepended with `Bearer ` — no manual steps needed.
+Exchanges your client credentials for a Bearer token. The Postman Test script saves it to `{{accessToken}}` automatically.
 
 ---
 
-### 1. Create Root Category
+### 1. Create Root Category – Engine & Drivetrain
 
 **POST** `.../v1/catalog/categories`
 
-Creates a single top-level (level 1) category with no parent.
+Creates the top-level Engine & Drivetrain root in the `parts-catalog` family with a hero image and full SEO metaTags.
 
 ```json
 [
   {
-    "slug": "men",
-    "name": "Men",
-    "family": "main-catalog",
+    "slug": "engine-drivetrain",
+    "name": "Engine & Drivetrain",
+    "family": "parts-catalog",
     "parentSlug": "",
     "level": 1,
-    "description": "All mens clothing and accessories",
+    "description": "OEM and aftermarket engine components, transmissions, and drivetrain parts for all makes and models.",
     "metaTags": {
-      "title": "Men | My Store",
-      "description": "Shop mens clothing, shoes, and accessories",
-      "keywords": ["mens", "clothing", "fashion"]
+      "title": "Engine & Drivetrain Parts | AutoParts Store",
+      "description": "Shop engine components, transmissions, differentials, and drivetrain parts.",
+      "keywords": ["engine parts", "drivetrain", "transmission", "OEM", "aftermarket"]
     },
     "images": [
       {
-        "url": "https://example.com/images/men-banner.jpg",
-        "label": "Men category banner",
-        "roles": ["BASE", "THUMBNAIL"]
+        "url": "https://example.com/images/engine-drivetrain-hero.jpg",
+        "label": "Engine and drivetrain parts hero",
+        "roles": ["BASE", "THUMBNAIL"],
+        "customRoles": ["category-hero"]
       }
     ]
   }
 ]
 ```
 
-> `parentSlug` must be an empty string `""` for root categories.
+> `parentSlug` must be an empty string `""` for all level 1 root categories.
 
 ---
 
-### 2. Create Child Category (Level 2)
+### 2. Create Child Category – Engine Components (Level 2)
 
 **POST** `.../v1/catalog/categories`
 
-Creates a level 2 category nested under an existing root. The `parentSlug` must match the `slug` of an already-ingested parent.
+Creates a level 2 subcategory nested under `engine-drivetrain`. The `parentSlug` must exactly match the parent's `slug`.
 
 ```json
 [
   {
-    "slug": "men/clothing",
-    "name": "Men's Clothing",
-    "family": "main-catalog",
-    "parentSlug": "men",
+    "slug": "engine-drivetrain/engine-components",
+    "name": "Engine Components",
+    "family": "parts-catalog",
+    "parentSlug": "engine-drivetrain",
     "level": 2,
-    "description": "Tops, bottoms, and outerwear for men"
+    "description": "Pistons, gaskets, timing systems, and valvetrain parts."
   }
 ]
 ```
 
 ---
 
-### 3. Create Grandchild Category (Level 3)
+### 3. Create Grandchild Category – Pistons & Rings (Level 3)
 
 **POST** `.../v1/catalog/categories`
 
-Creates a level 3 leaf category. Images and `metaTags` are optional at this depth — omit them for lightweight leaf nodes.
+Creates a level 3 leaf category. Images and metaTags are optional at this depth.
 
 ```json
 [
   {
-    "slug": "men/clothing/tops",
-    "name": "Men's Tops",
-    "family": "main-catalog",
-    "parentSlug": "men/clothing",
+    "slug": "engine-drivetrain/engine-components/pistons-rings",
+    "name": "Pistons & Rings",
+    "family": "parts-catalog",
+    "parentSlug": "engine-drivetrain/engine-components",
     "level": 3,
-    "description": "T-shirts, polos, and dress shirts"
+    "description": "Forged and cast pistons, piston rings, and pin kits for engine rebuilds and performance upgrades."
   }
 ]
 ```
 
 ---
 
-### 4. Batch Create Multiple Categories
+### 4. Batch Create – Brakes & Suspension Trees
 
 **POST** `.../v1/catalog/categories`
 
-Sends multiple categories in a single request. The array can span different levels — the API processes them all together. This is the most efficient approach when seeding a new catalog hierarchy.
+Seeds two complete category trees — Brakes (root + 3 children) and Suspension & Steering (root + 2 children) — in a **single API call**. This is the recommended approach for bulk catalog seeding.
 
-```json
-[
-  { "slug": "women",                 "level": 1, "parentSlug": "" },
-  { "slug": "women/clothing",        "level": 2, "parentSlug": "women" },
-  { "slug": "women/clothing/tops",   "level": 3, "parentSlug": "women/clothing" },
-  { "slug": "women/clothing/bottoms","level": 3, "parentSlug": "women/clothing" }
-]
-```
+**7 categories created, one request:**
 
-**Successful response:**
+| Slug | Level | Parent |
+|---|---|---|
+| `brakes` | 1 | — |
+| `brakes/brake-pads` | 2 | `brakes` |
+| `brakes/brake-rotors` | 2 | `brakes` |
+| `brakes/calipers-hardware` | 2 | `brakes` |
+| `suspension` | 1 | — |
+| `suspension/shocks-struts` | 2 | `suspension` |
+| `suspension/control-arms-ball-joints` | 2 | `suspension` |
+
+**Response:**
 ```json
-{ "status": "ACCEPTED", "acceptedCount": 4 }
+{ "status": "ACCEPTED", "acceptedCount": 7 }
 ```
 
 ---
 
-### 5. Create Seasonal Family Categories
+### 5. Create Full Rich Category – Electrical & Lighting
 
 **POST** `.../v1/catalog/categories`
 
-Creates categories under a separate `family` namespace. Use distinct family names when your catalog has multiple independent category trees — for example `main-catalog` for primary navigation and `seasonal` for campaign-specific hierarchies. The `family` value is passed as a header when querying via the Merchandising GraphQL API.
+Creates the Electrical & Lighting root with the complete set of optional fields — dual images (hero `BASE` + `THUMBNAIL`), `customRoles` for storefront targeting, full SEO `metaTags` — plus three child subcategories in one request. This shape is the template for **SEO-driven category landing pages**.
 
-```json
-[
-  { "slug": "summer",            "family": "seasonal", "level": 1, "parentSlug": "" },
-  { "slug": "summer/essentials", "family": "seasonal", "level": 2, "parentSlug": "summer" }
-]
+**Subcategories created:**
+
+| Slug | Name |
+|---|---|
+| `electrical-lighting/batteries-charging` | Batteries & Charging |
+| `electrical-lighting/headlights-taillights` | Headlights & Tail Lights |
+| `electrical-lighting/sensors-switches` | Sensors & Switches |
+
+---
+
+### 6. Create Seasonal Family – Winter & Summer Campaigns
+
+**POST** `.../v1/catalog/categories`
+
+Creates two campaign trees under the separate `seasonal-catalog` family. Seasonal categories are fully independent from `parts-catalog` and can be toggled or removed without affecting permanent navigation.
+
+**Categories created:**
+
+| Slug | Family | Level |
+|---|---|---|
+| `winter-prep` | `seasonal-catalog` | 1 |
+| `winter-prep/cold-weather-batteries` | `seasonal-catalog` | 2 |
+| `winter-prep/winter-wipers-fluid` | `seasonal-catalog` | 2 |
+| `summer-performance` | `seasonal-catalog` | 1 |
+| `summer-performance/cooling-system` | `seasonal-catalog` | 2 |
+
+Images include `customRoles: ["seasonal-hero", "homepage-banner"]` for storefront banner slot targeting.
+
+**Storefront query scoped to seasonal family:**
+```graphql
+navigation(family: "seasonal-catalog") {
+  slug
+  name
+  children { slug name }
+}
 ```
 
 ---
 
-### 6. Create Category with Full Rich Content
-
-**POST** `.../v1/catalog/categories`
-
-Creates a category with the complete set of optional fields: `description`, SEO `metaTags`, multiple `images` with standard and custom roles. Use this shape for category landing pages that need hero imagery and search engine metadata.
-
-```json
-[
-  {
-    "slug": "men/clothing/shorts",
-    "name": "Men's Shorts",
-    "family": "main-catalog",
-    "parentSlug": "men/clothing",
-    "level": 3,
-    "description": "Browse our full range of men's shorts, from casual to athletic styles.",
-    "metaTags": {
-      "title": "Men's Shorts | My Store",
-      "description": "Shop men's shorts for every occasion",
-      "keywords": ["shorts", "men", "athletic", "casual"]
-    },
-    "images": [
-      {
-        "url": "https://example.com/images/mens-shorts-hero.jpg",
-        "label": "Men's shorts collection hero",
-        "roles": ["BASE"],
-        "customRoles": ["hero-banner"]
-      },
-      {
-        "url": "https://example.com/images/mens-shorts-thumb.jpg",
-        "label": "Men's shorts thumbnail",
-        "roles": ["THUMBNAIL"]
-      }
-    ]
-  }
-]
-```
-
----
-
-### 7. Assign Product to Categories
+### 7. Assign Automotive Part to Categories
 
 **POST** `.../v1/catalog/products`
 
-Links an existing product to one or more categories by referencing their `slug` values in the `categories` array. A product can belong to multiple categories across different families simultaneously.
+Assigns the **ProStart AGM Group H6 850CCA Battery** to categories in both families simultaneously — it appears in the permanent Batteries & Charging section and also surfaces in the Winter Vehicle Prep campaign.
 
 ```json
 [
   {
-    "sku": "my-product-sku-001",
+    "sku": "BAT-AGM-H6-850CCA",
     "source": { "locale": "en-US" },
-    "name": "My Product",
-    "slug": "my-product",
-    "status": "ENABLED",
+    "name": "ProStart AGM Group H6 850CCA Battery",
+    "attributes": [
+      { "code": "brand",            "type": "STRING", "values": ["ProStart"] },
+      { "code": "batteryType",      "type": "STRING", "values": ["AGM"] },
+      { "code": "coldCrankingAmps", "type": "STRING", "values": ["850"] },
+      { "code": "groupSize",        "type": "STRING", "values": ["H6"] }
+    ],
     "categories": [
-      { "slug": "men/clothing/tops" },
-      { "slug": "summer/essentials" }
+      { "slug": "electrical-lighting/batteries-charging" },
+      { "slug": "winter-prep/cold-weather-batteries" }
     ],
     "roles": ["SEARCH", "CATALOG"]
   }
@@ -279,41 +321,84 @@ Links an existing product to one or more categories by referencing their `slug` 
 
 ---
 
+## Full Category Hierarchy
+
+```
+parts-catalog
+├── engine-drivetrain                                 (L1)
+│   └── engine-drivetrain/engine-components          (L2)
+│       └── .../pistons-rings                        (L3)
+├── brakes                                           (L1)
+│   ├── brakes/brake-pads                            (L2)
+│   ├── brakes/brake-rotors                          (L2)
+│   └── brakes/calipers-hardware                     (L2)
+├── suspension                                       (L1)
+│   ├── suspension/shocks-struts                     (L2)
+│   └── suspension/control-arms-ball-joints          (L2)
+└── electrical-lighting                              (L1)
+    ├── electrical-lighting/batteries-charging       (L2)
+    ├── electrical-lighting/headlights-taillights    (L2)
+    └── electrical-lighting/sensors-switches         (L2)
+
+seasonal-catalog
+├── winter-prep                                      (L1)
+│   ├── winter-prep/cold-weather-batteries           (L2)
+│   └── winter-prep/winter-wipers-fluid              (L2)
+└── summer-performance                               (L1)
+    └── summer-performance/cooling-system            (L2)
+```
+
+---
+
 ## Key Concepts
 
 ### Slugs and hierarchy
 
-The `slug` field is the unique identifier for a category and encodes its position in the tree. By convention, child slugs extend the parent slug with a `/` separator:
+The `slug` field is the unique identifier for a category and encodes its position in the tree. Child slugs extend the parent with a `/` separator:
 
 ```
-men                    ← level 1 (root)
-men/clothing           ← level 2
-men/clothing/tops      ← level 3
-men/clothing/tops/tees ← level 4 (max depth for navigation query)
+brakes                        ← level 1 (root)
+brakes/brake-pads             ← level 2
+brakes/brake-pads/ceramic     ← level 3
+brakes/brake-pads/ceramic/oem ← level 4 (max depth for navigation query)
 ```
 
-The `parentSlug` field must explicitly reference the direct parent. Setting an incorrect `parentSlug` relative to the `slug` path will cause hierarchy inconsistencies.
+The `parentSlug` field must explicitly reference the direct parent's slug. Mismatches between `parentSlug` and the `slug` path will cause hierarchy inconsistencies.
 
 ### Category families
 
-A `family` groups categories into an independent tree. Use families when you need multiple distinct navigation structures — for example a main product taxonomy alongside a seasonal or promotional hierarchy. When querying the storefront, pass the family name in the `family` argument to scope results:
+A `family` groups categories into an independent navigation tree:
+
+| Family | Purpose |
+|---|---|
+| `parts-catalog` | Permanent OEM/aftermarket parts taxonomy — always-on main navigation |
+| `seasonal-catalog` | Time-limited campaign trees — activated for seasonal promotions |
+
+When querying the storefront, pass the `family` argument to scope results:
 
 ```graphql
-navigation(family: "seasonal") { ... }
-categoryTree(family: "main-catalog") { ... }
+# Parts navigation only
+navigation(family: "parts-catalog") { ... }
+
+# Winter campaign tree only
+categoryTree(family: "seasonal-catalog", slugs: ["winter-prep"]) { ... }
 ```
+
+### Cross-family product placement
+
+A single product SKU can be assigned to categories across multiple families without data duplication. The product record is shared; only the category assignment differs. This lets an AGM battery live permanently under Electrical and also surface in the Winter prep campaign.
 
 ### Navigation depth limit
 
-The `navigation` GraphQL query returns a maximum of **4 levels** of nested children. Design your hierarchy accordingly — categories deeper than level 4 will not appear in navigation results (but remain accessible via `categoryTree`).
+The `navigation` GraphQL query returns a maximum of **4 levels** of nested children. Categories deeper than level 4 won't appear in navigation results but remain accessible via `categoryTree`.
 
 ### Image roles
 
 | Role | Usage |
 |---|---|
-| `BASE` | Primary display image (e.g. category hero) |
-| `THUMBNAIL` | Compact image for menus or listing tiles |
-| `customRoles` | Arbitrary string tags for your storefront (e.g. `"hero-banner"`) |
+| `BASE` | Primary display image (category hero) |
+| `THUMBNAIL` | Compact image for menus and listing tiles |
+| `customRoles` | Arbitrary tags for storefront slot targeting — e.g. `"category-hero"`, `"homepage-banner"`, `"nav-featured"`, `"seasonal-hero"` |
 
 ---
 
@@ -330,7 +415,10 @@ The `navigation` GraphQL query returns a maximum of **4 levels** of nested child
 
 ## Rate Limits
 
-The Data Ingestion API is limited to **300 requests per minute**. Exceeding this returns a `429` response. For large catalog seeding operations, add delays between batch requests or use the [TypeScript SDK](https://github.com/adobe-commerce/aco-ts-sdk) or [Java SDK](https://github.com/adobe-commerce/aco-java-sdk) which handle retries automatically.
+The Data Ingestion API is limited to **300 requests per minute**. Exceeding this returns a `429`. For large catalog seeding operations, batch multiple categories into a single request payload (as shown in request 4) or use the official SDKs which handle retries automatically:
+
+- [TypeScript SDK](https://github.com/adobe-commerce/aco-ts-sdk)
+- [Java SDK](https://github.com/adobe-commerce/aco-java-sdk)
 
 ---
 
