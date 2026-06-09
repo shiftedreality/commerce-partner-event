@@ -32,26 +32,6 @@
       "color": null
     },
     {
-      "_id": "env_production_aco",
-      "_type": "environment",
-      "name": "Production",
-      "parentId": "wrk_aco_automotive",
-      "data": {
-        "tenantId": "YOUR_TENANT_ID",
-        "clientId": "YOUR_CLIENT_ID",
-        "clientSecret": "YOUR_CLIENT_SECRET",
-        "region": "na1",
-        "environment": "",
-        "locale": "en-US",
-        "accessToken": "Bearer YOUR_ACCESS_TOKEN",
-        "baseUrl": "https://na1.api.commerce.adobe.com",
-        "categoriesEndpoint": "/v1/catalog/categories",
-        "productsEndpoint": "/v1/catalog/products",
-        "imsUrl": "https://ims-na1.adobelogin.com/ims/token/v3"
-      },
-      "color": "#e74c3c"
-    },
-    {
       "_id": "fld_aco_auth",
       "_type": "request_group",
       "name": "Authentication",
