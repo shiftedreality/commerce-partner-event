@@ -14,7 +14,10 @@
     { "key": "accessToken",         "value": "Bearer YOUR_ACCESS_TOKEN", "type": "string", "description": "Auto-populated by the Get Access Token test script." },
     { "key": "imsUrl",              "value": "https://ims-na1.adobelogin.com/ims/token/v3", "type": "string" },
     { "key": "categoriesEndpoint",  "value": "/v1/catalog/categories", "type": "string" },
-    { "key": "productsEndpoint",    "value": "/v1/catalog/products",   "type": "string" }
+    { "key": "productsEndpoint",    "value": "/v1/catalog/products",   "type": "string" },
+    { "key": "priceBookId",         "value": "YOUR_PRICE_BOOK_ID", "type": "string" },
+    { "key": "scopeLocale",         "value": "YOUR_SCOPE_LOCALE",  "type": "string" },
+    { "key": "viewId",              "value": "YOUR_VIEW_ID",       "type": "string" }
   ],
   "item": [
     {
@@ -188,6 +191,50 @@
             },
             "url": { "raw": "{{baseUrl}}/{{tenantId}}{{productsEndpoint}}/metadata" },
             "description": "Submits attribute metadata for the 5 required base attributes (sku, name, description, shortDescription, price) plus 5 automotive-specific custom attributes (brand, batteryType, coldCrankingAmps, groupSize, partType). Must be submitted before creating products."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Discovery",
+      "description": "GraphQL Discovery API queries - navigation, search, and product detail. Hits the storefront-facing GraphQL endpoint (no OAuth required).",
+      "item": [
+        {
+          "name": "1. Navigation - parts-catalog",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",      "value": "application/json" },
+              { "key": "AC-ENVIRONMENT-Id", "value": "{{tenantId}}" },
+              { "key": "AC-Price-Book-ID",  "value": "{{priceBookId}}" },
+              { "key": "AC-Scope-Locale",   "value": "{{scopeLocale}}" },
+              { "key": "ac-view-id",        "value": "{{viewId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query Navigation($family: String!) {\\n  navigation(family: $family) {\\n    slug\\n    name\\n    children {\\n      slug\\n      name\\n      children {\\n        slug\\n        name\\n        children {\\n          name\\n        }\\n      }\\n    }\\n  }\\n}\",\n  \"operationName\": \"Navigation\",\n  \"variables\": {\n    \"family\": \"parts-catalog\"\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/{{tenantId}}/graphql" },
+            "description": "Fetches the full navigation tree for the parts-catalog family up to 3 levels deep. No OAuth token required.\n\nChange the 'family' variable to 'seasonal-catalog' to query the seasonal tree."
+          }
+        },
+        {
+          "name": "2. Category Tree",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",      "value": "application/json" },
+              { "key": "AC-ENVIRONMENT-Id", "value": "{{tenantId}}" },
+              { "key": "AC-Scope-Locale",   "value": "{{scopeLocale}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query CategoriesTree($family: String!, $slugs: [String!], $depth: Int) {\\n  categoryTree(family: $family, slugs: $slugs, depth: $depth) {\\n    slug\\n    name\\n    level\\n    parentSlug\\n    childrenSlugs\\n    metaTags {\\n      title\\n    }\\n    images {\\n      roles\\n      customRoles\\n      url\\n    }\\n  }\\n}\",\n  \"operationName\": \"CategoriesTree\",\n  \"variables\": {\n    \"slugs\": [],\n    \"family\": \"parts-catalog\",\n    \"depth\": 5\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/{{tenantId}}/graphql" },
+            "description": "Returns a flat list of category nodes with full metadata (level, parentSlug, childrenSlugs, metaTags, images).\n\nOptional filters:\n- slugs: limit to specific paths, e.g. [\"brakes\", \"suspension\"]. Leave [] to return all.\n- depth: max depth to traverse (1-5).\n\nNote: no AC-Price-Book-ID or ac-view-id headers required."
           }
         }
       ]

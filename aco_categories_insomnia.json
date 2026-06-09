@@ -27,7 +27,10 @@
         "baseUrl": "https://na1-sandbox.api.commerce.adobe.com",
         "categoriesEndpoint": "/v1/catalog/categories",
         "productsEndpoint": "/v1/catalog/products",
-        "imsUrl": "https://ims-na1.adobelogin.com/ims/token/v3"
+        "imsUrl": "https://ims-na1.adobelogin.com/ims/token/v3",
+        "priceBookId": "YOUR_PRICE_BOOK_ID",
+        "scopeLocale": "YOUR_SCOPE_LOCALE",
+        "viewId": "YOUR_VIEW_ID"
       },
       "color": null
     },
@@ -70,6 +73,14 @@
       "parentId": "wrk_aco_automotive",
       "description": "Assign product SKUs to categories across one or more families.",
       "sortKey": 4
+    },
+    {
+      "_id": "fld_aco_discovery",
+      "_type": "request_group",
+      "name": "Discovery",
+      "parentId": "wrk_aco_automotive",
+      "description": "GraphQL Discovery API queries - navigation, search, and product detail. Hits the storefront-facing GraphQL endpoint (no OAuth required).",
+      "sortKey": 5
     },
     {
       "_id": "req_aco_get_token",
@@ -236,6 +247,46 @@
         { "name": "Authorization", "value": "{{ _.accessToken }}" }
       ],
       "sortKey": 0
+    },
+    {
+      "_id": "req_aco_nav_parts_catalog",
+      "_type": "request",
+      "name": "1. Navigation - parts-catalog",
+      "parentId": "fld_aco_discovery",
+      "description": "Fetches the full navigation tree for the parts-catalog family up to 3 levels deep (root → children → grandchildren → great-grandchildren names).\n\nNo OAuth token required - this is the storefront-facing GraphQL endpoint.\n\nChange the 'family' variable to 'seasonal-catalog' to query the seasonal tree.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/{{ _.tenantId }}/graphql",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"query\": \"query Navigation($family: String!) {\\n  navigation(family: $family) {\\n    slug\\n    name\\n    children {\\n      slug\\n      name\\n      children {\\n        slug\\n        name\\n        children {\\n          name\\n        }\\n      }\\n    }\\n  }\\n}\",\n  \"operationName\": \"Navigation\",\n  \"variables\": {\n    \"family\": \"parts-catalog\"\n  }\n}"
+      },
+      "headers": [
+        { "name": "Content-Type",       "value": "application/json" },
+        { "name": "AC-ENVIRONMENT-Id",  "value": "{{ _.tenantId }}" },
+        { "name": "AC-Price-Book-ID",   "value": "{{ _.priceBookId }}" },
+        { "name": "AC-Scope-Locale",    "value": "{{ _.scopeLocale }}" },
+        { "name": "ac-view-id",         "value": "{{ _.viewId }}" }
+      ],
+      "sortKey": 0
+    },
+    {
+      "_id": "req_aco_category_tree",
+      "_type": "request",
+      "name": "2. Category Tree",
+      "parentId": "fld_aco_discovery",
+      "description": "Returns a flat list of category nodes for the given family with full metadata (level, parentSlug, childrenSlugs, metaTags, images).\n\nOptional filters:\n- slugs: limit results to specific category paths, e.g. [\"brakes\", \"suspension\"]. Leave empty ([]) to return all.\n- depth: max depth to traverse (1-5).\n\nNote: no AC-Price-Book-ID or ac-view-id headers required for this query.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/{{ _.tenantId }}/graphql",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"query\": \"query CategoriesTree($family: String!, $slugs: [String!], $depth: Int) {\\n  categoryTree(family: $family, slugs: $slugs, depth: $depth) {\\n    slug\\n    name\\n    level\\n    parentSlug\\n    childrenSlugs\\n    metaTags {\\n      title\\n    }\\n    images {\\n      roles\\n      customRoles\\n      url\\n    }\\n  }\\n}\",\n  \"operationName\": \"CategoriesTree\",\n  \"variables\": {\n    \"slugs\": [],\n    \"family\": \"parts-catalog\",\n    \"depth\": 5\n  }\n}"
+      },
+      "headers": [
+        { "name": "Content-Type",      "value": "application/json" },
+        { "name": "AC-ENVIRONMENT-Id", "value": "{{ _.tenantId }}" },
+        { "name": "AC-Scope-Locale",   "value": "{{ _.scopeLocale }}" }
+      ],
+      "sortKey": 1
     }
   ]
 }
