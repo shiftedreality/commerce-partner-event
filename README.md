@@ -12,9 +12,11 @@ Postman and Insomnia collections for creating and managing an **automotive parts
 - [Prerequisites](#prerequisites)
 - [Import into Postman](#import-into-postman)
 - [Import into Insomnia](#import-into-insomnia)
+- [Using curl scripts](#using-curl-scripts)
 - [Configuration](#configuration)
   - [Postman](#postman-configuration)
   - [Insomnia](#insomnia-configuration)
+  - [curl scripts](#curl-scripts-configuration)
 - [Authentication](#authentication)
   - [Postman](#postman-authentication)
   - [Insomnia](#insomnia-authentication)
@@ -27,6 +29,9 @@ Postman and Insomnia collections for creating and managing an **automotive parts
   - [5. Create Full Rich Category – Electrical & Lighting](#5-create-full-rich-category--electrical--lighting)
   - [6. Create Seasonal Family – Winter & Summer Campaigns](#6-create-seasonal-family--winter--summer-campaigns)
   - [7. Assign Automotive Part to Categories](#7-assign-automotive-part-to-categories)
+- [Discovery API](#discovery-api)
+  - [1. Navigation](#1-navigation)
+  - [2. Category Tree](#2-category-tree)
 - [Full Category Hierarchy](#full-category-hierarchy)
 - [Key Concepts](#key-concepts)
 - [API Response Reference](#api-response-reference)
@@ -50,10 +55,12 @@ https://{region}-{environment}.api.commerce.adobe.com/{tenantId}/v1/catalog/cate
 
 | File | Tool | Description |
 |---|---|---|
-| `Adobe_Commerce_Categories_API.postman_collection.json` | Postman | Collection with auto-token scripting and folder grouping |
-| `Adobe_Commerce_Automotive_Categories.insomnia_collection.json` | Insomnia | Equivalent collection with two pre-built environments (Sandbox / Production) |
+| `aco_categories_postman.json` | Postman | Collection with auto-token scripting and folder grouping |
+| `aco_categories_insomnia.json` | Insomnia | Equivalent collection with pre-built environment variables |
+| `curl_requests.sh` | curl | Ingestion API - executes all 8 requests end-to-end; fetches token automatically |
+| `curl_discovery.sh` | curl | Discovery GraphQL API - prints assembled curl commands ready to copy and run |
 
-Both files contain identical requests and payloads. Choose based on your preferred API client.
+The Postman and Insomnia collections contain identical ingestion requests. The curl scripts are self-contained alternatives requiring no additional tooling.
 
 ---
 
@@ -129,6 +136,31 @@ A product such as an AGM battery can simultaneously belong to `electrical-lighti
 
 ---
 
+## Using curl scripts
+
+Two standalone bash scripts are provided as an alternative to the GUI collections.
+
+| Script | Purpose |
+|---|---|
+| `curl_requests.sh` | Runs all 8 ingestion API requests sequentially; fetches and caches the IMS token automatically |
+| `curl_discovery.sh` | Prints ready-to-run curl commands for the two Discovery GraphQL queries |
+
+**Run the ingestion script:**
+
+```bash
+chmod +x curl_requests.sh && ./curl_requests.sh
+```
+
+**Print discovery commands:** (results may be available with some delay)
+
+```bash
+chmod +x curl_discovery.sh && ./curl_discovery.sh
+```
+
+Fill in the variables at the top of each file before running. See [curl scripts configuration](#curl-scripts-configuration) below.
+
+---
+
 ## Configuration
 
 The same six variables are used in both tools. Fill these in before running any request.
@@ -147,6 +179,34 @@ The same six variables are used in both tools. Fill these in before running any 
 ### Postman configuration
 
 Open the collection → **Variables** tab and fill in the values. The `accessToken` variable is set automatically by the test script in request 0 — leave it blank initially.
+
+### curl scripts configuration
+
+Open the relevant script and fill in the variables at the top of the file.
+
+**`curl_requests.sh`** — Ingestion API:
+
+| Variable | Description |
+|---|---|
+| `TENANT_ID` | Your Commerce Optimizer instance ID |
+| `CLIENT_ID` | OAuth client ID from Adobe Developer Console |
+| `CLIENT_SECRET` | OAuth client secret |
+| `REGION` | Cloud region, e.g. `na1` |
+| `ENVIRONMENT` | `sandbox` for non-production; empty string `""` for production |
+| `LOCALE` | Source locale for category data, e.g. `en-US` |
+
+**`curl_discovery.sh`** — Discovery GraphQL API:
+
+| Variable | Description                                                                 |
+|---|-----------------------------------------------------------------------------|
+| `TENANT_ID` | Your Commerce Optimizer instance ID                                         |
+| `REGION` / `ENVIRONMENT` | Same as above                                                               |
+| `PRICE_BOOK_ID` | Price book identifier, e.g. `base_usd`                                      |
+| `SCOPE_LOCALE` | Storefront scope locale, e.g. `en-US`                                       |
+| `VIEW_ID` | Storefront view ID (UUID)                                                   |
+| `FAMILY` | Catalog family used during ingestion: `parts-catalog` or `seasonal-catalog` |
+
+---
 
 ### Insomnia configuration
 
@@ -373,6 +433,96 @@ Assigns the **ProStart AGM Group H6 850CCA Battery** to categories in both famil
   }
 ]
 ```
+
+---
+
+## Discovery API
+
+The Discovery GraphQL API exposes ingested categories for storefront rendering. Use `curl_discovery.sh` to generate ready-to-run commands for the queries below, or import the **Discovery** folder from the Postman/Insomnia collections.
+
+**Endpoint:** `POST https://{region}-{environment}.api.commerce.adobe.com/{tenantId}/graphql`
+
+**Required headers (both queries):**
+
+| Header | Value |
+|---|---|
+| `Content-Type` | `application/json` |
+| `AC-ENVIRONMENT-Id` | Your tenant ID |
+| `AC-Scope-Locale` | Storefront scope locale |
+
+---
+
+### 1. Navigation
+
+Returns a nested tree of categories up to 4 levels deep — the primary input for building storefront navigation menus.
+
+Additional headers: `AC-Price-Book-ID`, `ac-view-id`
+
+```graphql
+query Navigation($family: String!) {
+  navigation(family: $family) {
+    slug
+    name
+    children {
+      slug
+      name
+      children {
+        slug
+        name
+        children {
+          name
+        }
+      }
+    }
+  }
+}
+```
+
+**Variables:**
+
+```json
+{ "family": "parts-catalog" }
+```
+
+> The `navigation` query returns a maximum of 4 levels. Categories deeper than level 4 remain accessible via `categoryTree`.
+
+---
+
+### 2. Category Tree
+
+Returns a flat list of category nodes with full metadata — level, parent/child relationships, SEO metaTags, and images. Suitable for building breadcrumbs, sitemap generation, or fetching a single subtree by slug.
+
+```graphql
+query CategoriesTree($family: String!, $slugs: [String!], $depth: Int) {
+  categoryTree(family: $family, slugs: $slugs, depth: $depth) {
+    slug
+    name
+    level
+    parentSlug
+    childrenSlugs
+    metaTags {
+      title
+    }
+    images {
+      roles
+      customRoles
+      url
+    }
+  }
+}
+```
+
+**Variables:**
+
+```json
+{
+  "family": "parts-catalog",
+  "slugs": [],
+  "depth": 5
+}
+```
+
+Set `slugs` to a non-empty array to limit results to a specific subtree, e.g. `["brakes", "suspension"]`. Leave it empty (`[]`) to return all categories in the family.
 
 ---
 
