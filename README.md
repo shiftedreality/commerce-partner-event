@@ -212,10 +212,9 @@ Creates the top-level Engine & Drivetrain root in the `parts-catalog` family wit
 [
   {
     "slug": "engine-drivetrain",
+    "source": { "locale": "en-US" },
     "name": "Engine & Drivetrain",
-    "family": "parts-catalog",
-    "parentSlug": "",
-    "level": 1,
+    "families": ["parts-catalog"],
     "description": "OEM and aftermarket engine components, transmissions, and drivetrain parts for all makes and models.",
     "metaTags": {
       "title": "Engine & Drivetrain Parts | AutoParts Store",
@@ -234,24 +233,21 @@ Creates the top-level Engine & Drivetrain root in the `parts-catalog` family wit
 ]
 ```
 
-> `parentSlug` must be an empty string `""` for all level 1 root categories.
-
 ---
 
 ### 2. Create Child Category – Engine Components (Level 2)
 
 **POST** `.../v1/catalog/categories`
 
-Creates a level 2 subcategory nested under `engine-drivetrain`. The `parentSlug` must exactly match the parent's `slug`.
+Creates a level 2 subcategory nested under `engine-drivetrain`. The slug path prefix (`engine-drivetrain`) identifies the parent category.
 
 ```json
 [
   {
     "slug": "engine-drivetrain/engine-components",
+    "source": { "locale": "en-US" },
     "name": "Engine Components",
-    "family": "parts-catalog",
-    "parentSlug": "engine-drivetrain",
-    "level": 2,
+    "families": ["parts-catalog"],
     "description": "Pistons, gaskets, timing systems, and valvetrain parts."
   }
 ]
@@ -269,10 +265,9 @@ Creates a level 3 leaf category. Images and metaTags are optional at this depth.
 [
   {
     "slug": "engine-drivetrain/engine-components/pistons-rings",
+    "source": { "locale": "en-US" },
     "name": "Pistons & Rings",
-    "family": "parts-catalog",
-    "parentSlug": "engine-drivetrain/engine-components",
-    "level": 3,
+    "families": ["parts-catalog"],
     "description": "Forged and cast pistons, piston rings, and pin kits for engine rebuilds and performance upgrades."
   }
 ]
@@ -288,15 +283,15 @@ Seeds two complete category trees — Brakes (root + 3 children) and Suspension 
 
 **7 categories created, one request:**
 
-| Slug | Level | Parent |
-|---|---|---|
-| `brakes` | 1 | — |
-| `brakes/brake-pads` | 2 | `brakes` |
-| `brakes/brake-rotors` | 2 | `brakes` |
-| `brakes/calipers-hardware` | 2 | `brakes` |
-| `suspension` | 1 | — |
-| `suspension/shocks-struts` | 2 | `suspension` |
-| `suspension/control-arms-ball-joints` | 2 | `suspension` |
+| Slug | Depth |
+|---|---|
+| `brakes` | 1 |
+| `brakes/brake-pads` | 2 |
+| `brakes/brake-rotors` | 2 |
+| `brakes/calipers-hardware` | 2 |
+| `suspension` | 1 |
+| `suspension/shocks-struts` | 2 |
+| `suspension/control-arms-ball-joints` | 2 |
 
 **Response:**
 ```json
@@ -329,13 +324,13 @@ Creates two campaign trees under the separate `seasonal-catalog` family. Seasona
 
 **Categories created:**
 
-| Slug | Family | Level |
+| Slug | families | Depth |
 |---|---|---|
-| `winter-prep` | `seasonal-catalog` | 1 |
-| `winter-prep/cold-weather-batteries` | `seasonal-catalog` | 2 |
-| `winter-prep/winter-wipers-fluid` | `seasonal-catalog` | 2 |
-| `summer-performance` | `seasonal-catalog` | 1 |
-| `summer-performance/cooling-system` | `seasonal-catalog` | 2 |
+| `winter-prep` | `["seasonal-catalog"]` | 1 |
+| `winter-prep/cold-weather-batteries` | `["seasonal-catalog"]` | 2 |
+| `winter-prep/winter-wipers-fluid` | `["seasonal-catalog"]` | 2 |
+| `summer-performance` | `["seasonal-catalog"]` | 1 |
+| `summer-performance/cooling-system` | `["seasonal-catalog"]` | 2 |
 
 Images include `customRoles: ["seasonal-hero", "homepage-banner"]` for storefront banner slot targeting.
 
@@ -362,17 +357,19 @@ Assigns the **ProStart AGM Group H6 850CCA Battery** to categories in both famil
     "sku": "BAT-AGM-H6-850CCA",
     "source": { "locale": "en-US" },
     "name": "ProStart AGM Group H6 850CCA Battery",
+    "slug": "bat-agm-h6-850cca",
+    "status": "ENABLED",
+    "visibleIn": ["SEARCH", "CATALOG"],
     "attributes": [
-      { "code": "brand",            "type": "STRING", "values": ["ProStart"] },
-      { "code": "batteryType",      "type": "STRING", "values": ["AGM"] },
-      { "code": "coldCrankingAmps", "type": "STRING", "values": ["850"] },
-      { "code": "groupSize",        "type": "STRING", "values": ["H6"] }
+      { "code": "brand",            "values": ["ProStart"] },
+      { "code": "batteryType",      "values": ["AGM"] },
+      { "code": "coldCrankingAmps", "values": ["850"] },
+      { "code": "groupSize",        "values": ["H6"] }
     ],
-    "categories": [
-      { "slug": "electrical-lighting/batteries-charging" },
-      { "slug": "winter-prep/cold-weather-batteries" }
-    ],
-    "roles": ["SEARCH", "CATALOG"]
+    "routes": [
+      { "path": "electrical-lighting/batteries-charging" },
+      { "path": "winter-prep/cold-weather-batteries" }
+    ]
   }
 ]
 ```
@@ -421,13 +418,13 @@ brakes/brake-pads/ceramic     ← level 3
 brakes/brake-pads/ceramic/oem ← level 4 (max depth for navigation query)
 ```
 
-The `parentSlug` field must explicitly reference the direct parent's slug. Mismatches between `parentSlug` and the `slug` path will cause hierarchy inconsistencies.
+The parent category is determined by the slug path prefix. For example, `brakes/brake-pads` is implicitly a child of `brakes` — no separate parent field is needed.
 
 ### Category families
 
-A `family` groups categories into an independent navigation tree:
+The `families` array assigns a category to one or more independent navigation trees:
 
-| Family | Purpose |
+| families value | Purpose |
 |---|---|
 | `parts-catalog` | Permanent OEM/aftermarket parts taxonomy — always-on main navigation |
 | `seasonal-catalog` | Time-limited campaign trees — activated for seasonal promotions |
